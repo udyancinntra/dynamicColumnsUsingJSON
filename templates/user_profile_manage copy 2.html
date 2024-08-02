@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7fa;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 750px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #0366d6;
+            text-align: center;
+            font-size: 26px;
+        }
+
+        .profile-section, .dynamic-data {
+            background-color: #f9f9f9;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+            border: 1px solid #e1e4e8;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #0366d6;
+            font-size: 22px;
+        }
+
+        .field {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 3px;
+            position: relative;
+        }
+
+        .field-buttons {
+            margin-top: 10px;
+        }
+
+        .btn {
+            padding: 5px 10px;
+            margin-right: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 3px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .edit-btn {
+            background-color: #0056b3;
+            color: white;
+        }
+
+        .delete-btn {
+            background-color: #d9534f;
+            color: white;
+        }
+
+        .add-btn {
+            background-color: #0056b3;
+            color: white;
+        }
+
+        .edit-btn:hover {
+            background-color: #0366d6;
+        }
+
+        .delete-btn:hover {
+            background-color: #c9302c;
+        }
+
+        .add-btn:hover {
+            background-color: #0366d6;
+        }
+
+        input[type="text"], input[type="email"], select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .no-dynamic-data {
+            text-align: center;
+            color: #666;
+            font-size: 16px;
+        }
+
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>User Profile</h1>
+        <form id="profile-form" method="post">
+            {% csrf_token %}
+            <div class="profile-section">
+                <h2>Static Data</h2>
+                <div class="field">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" value="{{ profile.name }}" required>
+                </div>
+                <div class="field">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" value="{{ profile.email }}" required>
+                </div>
+                <div class="field">
+                    <label for="position">Position:</label>
+                    <input type="text" id="position" name="position" value="{{ profile.position }}" required>
+                </div>
+            </div>
+            <div class="dynamic-data">
+                <h2>Dynamic Data</h2>
+                <div id="dynamic-data-content" class="no-dynamic-data">No dynamic data available.</div>
+                <button type="button" class="btn add-btn" onclick="openAddModal()">Add New Field</button>
+            </div>
+            <input type="hidden" id="dynamic-data-input" name="data" value="{{ dynamic_data_json }}">
+            <button type="submit" class="btn edit-btn">Save</button>
+        </form>
+    </div>
+
+    <!-- The Edit Modal -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Edit Dynamic Data</h2>
+            <form id="edit-form">
+                <div class="field">
+                    <label for="edit-column-name">Column Name:</label>
+                    <input type="text" id="edit-column-name" name="edit-column-name" required>
+                </div>
+                <div class="field">
+                    <label for="edit-data">Data:</label>
+                    <!-- Placeholder for dynamic input field -->
+                    <div id="edit-data-container"></div>
+                </div>
+                <input type="hidden" id="original-key">
+                <button type="submit" class="btn edit-btn">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="add-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddModal()">&times;</span>
+            <h2>Add Dynamic Data</h2>
+            <form id="add-form">
+                <div class="field">
+                    <label for="add-column-name">Column Name:</label>
+                    <input type="text" id="add-column-name" name="add-column-name" required>
+                </div>
+                <div class="field">
+                    <label for="add-column-type">Column Type:</label>
+                    <select id="add-column-type" name="add-column-type" required>
+                        <option value="text">Text</option>
+                        <option value="number">Number</option>
+                        <option value="date">Date</option>
+                        <option value="dropdown">Dropdown</option>
+                        <option value="checkbox">Checkbox</option>
+                    </select>
+                </div>
+                <div id="add-data-container" class="field">
+                    <label for="add-data">Data:</label>
+                    <!-- Placeholder for dynamic input field -->
+                </div>
+                <div id="options-container" style="display: none;">
+                    <h3>Options</h3>
+                    <div id="options-list"></div>
+                    <input type="text" id="new-option-input" placeholder="Enter new option">
+                    <button type="button" class="btn add-btn" onclick="addOption()">Add Option</button>
+                </div>
+                <button type="submit" class="btn add-btn">Add Field</button>
+            </form>
+        </div>
+    </div>
+      <script>
+let dynamicDataJson = JSON.parse('{{ dynamic_data_json|escapejs }}');
+const dynamicDataContent = document.getElementById('dynamic-data-content');
+const editModal = document.getElementById('edit-modal');
+const addModal = document.getElementById('add-modal');
+const closeEditModal = document.querySelector('#edit-modal .close');
+const closeAddModal = document.querySelector('#add-modal .close');
+const editForm = document.getElementById('edit-form');
+const addForm = document.getElementById('add-form');
+const columnNameInput = document.getElementById('edit-column-name');
+const addColumnTypeInput = document.getElementById('add-column-type');
+const originalKeyInput = document.getElementById('original-key');
+const editDataContainer = document.getElementById('edit-data-container');
+const addDataContainer = document.getElementById('add-data-container');
+
+let options = ['Option 1', 'Option 2', 'Option 3'];
+
+function renderFields() {
+    dynamicDataContent.innerHTML = '';
+    if (Object.keys(dynamicDataJson).length === 0) {
+        dynamicDataContent.classList.add('no-dynamic-data');
+        dynamicDataContent.innerHTML = '<p>No dynamic data available.</p>';
+    } else {
+        dynamicDataContent.classList.remove('no-dynamic-data');
+        for (const [key, value] of Object.entries(dynamicDataJson)) {
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'field';
+            const data = typeof value === 'object' ? value.data : value;
+            const columnType = typeof value === 'object' ? value.column_type : 'text';
+            const formattedData = columnType === 'date' ? new Date(data).toISOString().split('T')[0] : data;
+
+            fieldDiv.innerHTML = `
+                <div><strong>Column Name:</strong> ${key}</div>
+                <div><strong>Column Type:</strong> ${columnType}</div>
+                <div><strong>Data:</strong> ${formattedData}</div>
+                <div class="field-buttons">
+                    <button type="button" class="btn edit-btn" onclick="openEditModal('${key}')">Edit</button>
+                    <button type="button" class="btn delete-btn" onclick="deleteField('${key}')">Delete Field</button>
+                </div>
+            `;
+            dynamicDataContent.appendChild(fieldDiv);
+        }
+    }
+}
+
+function updateInputFields(modal, columnType, data) {
+    const container = modal === 'add' ? addDataContainer : editDataContainer;
+    container.innerHTML = '';
+
+    let label = document.createElement('label');
+    label.setAttribute('for', `${modal}-data`);
+    label.textContent = 'Data:';
+    container.appendChild(label);
+
+    switch (columnType) {
+        case 'text':
+            const textInput = document.createElement('input');
+            textInput.type = 'text';
+            textInput.id = `${modal}-data`;
+            textInput.name = `${modal}-data`;
+            textInput.value = data || '';
+            container.appendChild(textInput);
+            break;
+
+        case 'number':
+            const numberInput = document.createElement('input');
+            numberInput.type = 'number';
+            numberInput.id = `${modal}-data`;
+            numberInput.name = `${modal}-data`;
+            numberInput.value = data || '';
+            container.appendChild(numberInput);
+            break;
+
+        case 'date':
+            const dateInput = document.createElement('input');
+            dateInput.type = 'date';
+            dateInput.id = `${modal}-data`;
+            dateInput.name = `${modal}-data`;
+            dateInput.value = data ? new Date(data).toISOString().split('T')[0] : '';
+            container.appendChild(dateInput);
+            break;
+
+        case 'dropdown':
+            const select = document.createElement('select');
+            select.id = `${modal}-data`;
+            select.name = `${modal}-data`;
+            select.multiple = true;
+
+            options.forEach(optionText => {
+                const option = document.createElement('option');
+                option.value = optionText;
+                option.textContent = optionText;
+                if (data && data.split(',').map(opt => opt.trim()).includes(optionText)) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+
+            container.appendChild(select);
+            break;
+
+        case 'checkbox':
+            options.forEach(optionText => {
+                const checkboxLabel = document.createElement('label');
+                checkboxLabel.textContent = optionText;
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = optionText;
+                checkbox.id = `${modal}-checkbox-${optionText}`;
+                checkbox.name = `${modal}-data`;
+                if (data && data.split(',').map(opt => opt.trim()).includes(optionText)) {
+                    checkbox.checked = true;
+                }
+
+                checkboxLabel.insertBefore(checkbox, checkboxLabel.firstChild);
+                container.appendChild(checkboxLabel);
+                container.appendChild(document.createElement('br'));
+            });
+            break;
+
+        default:
+            console.error('Unsupported column type:', columnType);
+    }
+}
+
+function showOptionsContainer() {
+    const columnType = document.getElementById('add-column-type').value;
+    const optionsContainer = document.getElementById('options-container');
+    if (columnType === 'dropdown' || columnType === 'checkbox') {
+        optionsContainer.style.display = 'block';
+    } else {
+        optionsContainer.style.display = 'none';
+    }
+}
+
+function addOption() {
+    const newOption = document.getElementById('new-option-input').value.trim();
+    if (newOption && !options.includes(newOption)) {
+        options.push(newOption);
+        updateOptionsList();
+        document.getElementById('new-option-input').value = '';
+    }
+}
+
+function removeOption(option) {
+    options = options.filter(o => o !== option);
+    updateOptionsList();
+}
+
+function updateOptionsList() {
+    const optionsList = document.getElementById('options-list');
+    optionsList.innerHTML = '';
+    options.forEach(option => {
+        const optionElement = document.createElement('div');
+        optionElement.textContent = option;
+        const removeButton = document.createElement('button');
+        removeButton.textContent = 'Remove';
+        removeButton.onclick = () => removeOption(option);
+        optionElement.appendChild(removeButton);
+        optionsList.appendChild(optionElement);
+    });
+    updateInputFields('add', document.getElementById('add-column-type').value, '');
+}
+
+window.openEditModal = function(key) {
+    const value = dynamicDataJson[key];
+    const columnType = typeof value === 'object' ? value.column_type : 'text';
+    const data = typeof value === 'object' ? value.data : value;
+    
+    columnNameInput.value = key;
+    updateInputFields('edit', columnType, data);
+    originalKeyInput.value = key;
+    editModal.style.display = 'block';
+}
+
+window.openAddModal = function() {
+    options = ['Option 1', 'Option 2', 'Option 3']; // Reset options
+    const columnType = document.getElementById('add-column-type').value;
+    updateInputFields('add', columnType, '');
+    showOptionsContainer();
+    updateOptionsList();
+    addModal.style.display = 'block';
+}
+
+window.closeAddModal = function() {
+    addModal.style.display = 'none';
+}
+
+window.deleteField = function(key) {
+    if (confirm(`Are you sure you want to delete the field "${key}"?`)) {
+        delete dynamicDataJson[key];
+        document.getElementById('dynamic-data-input').value = JSON.stringify(dynamicDataJson);
+        renderFields();
+    }
+}
+
+document.getElementById('profile-form').onsubmit = function(event) {
+    event.preventDefault();
+    const formattedDynamicData = {};
+    for (const [key, value] of Object.entries(dynamicDataJson)) {
+        formattedDynamicData[key] = {
+            data: value.data,
+            column_type: value.column_type
+        };
+    }
+    document.getElementById('dynamic-data-input').value = JSON.stringify(formattedDynamicData);
+    this.submit();
+};
+
+editForm.onsubmit = function(event) {
+    event.preventDefault();
+    const newColumnName = document.getElementById('edit-column-name').value;
+    const originalKey = document.getElementById('original-key').value;
+    let newData;
+    const columnType = dynamicDataJson[originalKey].column_type;
+    
+    if (columnType === 'checkbox') {
+        newData = Array.from(document.querySelectorAll('#edit-data-container input[type="checkbox"]:checked'))
+            .map(checkbox => checkbox.value)
+            .join(', ');
+    } else if (columnType === 'dropdown') {
+        const selectElement = document.querySelector('#edit-data-container select');
+        newData = Array.from(selectElement.selectedOptions).map(option => option.value).join(', ');
+    } else {
+        const inputElement = document.querySelector('#edit-data-container input, #edit-data-container select');
+        newData = inputElement.value;
+    }
+    
+    if (originalKey !== newColumnName) {
+        delete dynamicDataJson[originalKey];
+    }
+    
+    dynamicDataJson[newColumnName] = {
+        column_type: columnType,
+        data: newData
+    };
+    
+    editModal.style.display = 'none';
+    renderFields();
+}
+addForm.onsubmit = function(event) {
+    event.preventDefault();
+    
+    const newColumnName = document.getElementById('add-column-name').value;
+    const newColumnType = document.getElementById('add-column-type').value;
+    let newData;
+    
+    const addData = document.getElementById('add-data');
+    if (newColumnType === 'checkbox') {
+        newData = Array.from(document.querySelectorAll('input[name="add-data"]:checked'))
+            .map(checkbox => checkbox.value)
+            .join(', ');
+    } else if (newColumnType === 'dropdown') {
+        newData = Array.from(addData.selectedOptions).map(option => option.value).join(', ');
+    } else {
+        newData = addData.value;
+    }
+    
+    if (newColumnName in dynamicDataJson) {
+        alert('Field name already exists. Please choose a different name.');
+        return;
+    }
+    
+    dynamicDataJson[newColumnName] = {
+        column_type: newColumnType,
+        data: newData
+    };
+    
+    document.getElementById('dynamic-data-input').value = JSON.stringify(dynamicDataJson);
+    
+    addModal.style.display = 'none';
+    renderFields();
+    addForm.reset();
+}
+
+closeEditModal.onclick = function() {
+    editModal.style.display = 'none';
+}
+
+window.onclick = function(event) {
+    if (event.target === editModal) {
+        editModal.style.display = 'none';
+    }
+    if (event.target === addModal) {
+        addModal.style.display = 'none';
+    }
+}
+
+addColumnTypeInput.addEventListener('change', function() {
+    updateInputFields('add', this.value, '');
+    showOptionsContainer();
+});
+
+renderFields();
+      </script>
+   </body>
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Details</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #e9ecef;
+        }
+
+        h1,
+        h2 {
+            color: #343a40;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            width: 70%;
+            margin: 30px auto;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        form {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        button {
+            background-color: #157bd9;
+            color: #ffffff;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #153dec;
+        }
+
+        .result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #dc3545;
+        }
+
+        .success {
+            color: #28a745;
+        }
+
+        .user-profile p {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f1f3f5;
+            border-radius: 4px;
+        }
+
+        .user-profile p strong {
+            color: #495057;
+        }
+
+        .delete-form {
+            background: #ffffff;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .delete-form label {
+            display: block;
+            margin: 10px 0;
+        }
+
+        .delete-form ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .delete-form li {
+            margin: 5px 0;
+        }
+
+        .delete-form input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        .delete-form button {
+            background-color: #dc3545;
+            color: #ffffff;
+        }
+
+        .delete-form button:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>User Details</h1>
+
+        <!-- Search Form -->
+        <form id="search-form" method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Search</button>
+        </form>
+
+        <!-- Display User Profile -->
+        <hr>
+        {% if user_profile %}
+        <div id="user-profile" class="user-profile">
+            <h2>User Profile</h2>
+            <p><strong>Name:</strong> {{ user_profile.user_name }}</p>
+            <p><strong>Email:</strong> {{ user_profile.user_email }}</p>
+            <p><strong>Region:</strong> {{ user_profile.user_region }}</p>
+            <p><strong>Country Code:</strong> {{ user_profile.user_country_code }}</p>
+            <p><strong>Country:</strong> {{ user_profile.user_country }}</p>
+            <p><strong>Cadre:</strong> {{ user_profile.user_cadre }}</p>
+            <p><strong>Access Permission:</strong> {{ user_profile.access_permission }}</p>
+            <p><strong>Added By:</strong> {{ user_profile.added_by }}</p>
+        </div>
+        {% endif %}
+        <hr>
+
+        <!-- Delete Dynamic Data Form -->
+        <form id="delete-user-details" class="delete-form" method="post" action="{% url 'user_details' %}">
+            {% csrf_token %}
+            <input type="hidden" name="delete_columns" value="true">
+
+            <!-- Columns to delete -->
+            <label>Columns to delete:</label>
+            <ul>
+                {% for key, value in dynamic_data.items %}
+                <li>
+                    <label>
+                        <input type="checkbox" name="columns" value="{{ key }}">
+                        {{ key }}: {{ value }}
+                    </label>
+                </li>
+                {% endfor %}
+            </ul>
+
+            <button type="submit">Delete Selected Columns</button>
+            {{ form.as_p }}
+        </form>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <!-- JavaScript for AJAX Request -->
+    <script>
+        $(document).ready(function () {
+            $('#delete-user-details').on('submit', function (event) {
+                event.preventDefault();
+                const form = $(this);
+                const csrfToken = form.find('[name="csrfmiddlewaretoken"]').val();
+                $.ajax({
+                    url: form.attr('action'),
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    data: form.serialize(),
+                    success: function (response) {
+                        $('#result').text(response.message).removeClass('error').addClass('success');
+                        if (response.status === 'success') {
+                            location.reload();
+                        }
+                    },
+                    error: function () {
+                        $('#result').text('An error occurred while deleting the data.').removeClass('success').addClass('error');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

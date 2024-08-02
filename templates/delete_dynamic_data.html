@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Dynamic Data</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{% static 'js/jquery.min.js' %}"></script>
+    <meta name="csrf-token" content="{% csrf_token %}">
+</head>
+<body>
+    <h1>Delete Dynamic Data</h1>
+    <form id="delete-dynamic-data-form">
+        <label for="user_profile_id">User Profile ID:</label>
+        <input type="number" id="user_profile_id" name="user_profile_id" required>
+        <button type="submit">Delete Dynamic Data</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        $(document).ready(function() {
+            $('#delete-dynamic-data-form').on('submit', function(event) {
+                event.preventDefault();
+                const userProfileId = $('#user_profile_id').val();
+                const csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+                $.ajax({
+                    url: `/api/delete_dynamic_data/${userProfileId}/`,
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    },
+                    success: function(response) {
+                        $('#result').text(response.message);
+                    },
+                    error: function() {
+                        $('#result').text('An error occurred while deleting the data.');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

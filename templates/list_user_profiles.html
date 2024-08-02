@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profiles</title>
+    <script>
+        // JavaScript to handle automatic redirection
+        window.onload = function() {
+            window.location.href = "{% url 'user_profile_manage' %}";
+        };
+    </script>
+</head>
+<body>
+    <!-- Content to be shown briefly before redirecting -->
+    <h1>User Profiles</h1>
+    <p>Redirecting to the profile creation page...</p>
+    <ul>
+        {% for profile in profiles %}
+            <li>
+                <a href="{% url 'user_profile_manage' user_id=profile.id %}">{{ profile.name }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+    <a href="{% url 'user_profile_manage' %}">Create New Profile</a>
+</body>
+</html>
+
